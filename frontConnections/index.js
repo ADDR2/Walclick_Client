@@ -2,7 +2,7 @@ const fs = require('fs');
 
 const folder = `${__dirname}/../frontConnections/`;
 
-module.exports = (io, createMainConnection, createCoordsEvent) => {
+module.exports = (io, createMainConnection) => {
     io.on('connection', async socket => {
         console.log('New client connected');
         try {        
@@ -14,10 +14,10 @@ module.exports = (io, createMainConnection, createCoordsEvent) => {
                 if(err) throw new Error(err);
 
                 for(file of files) {
-                    file !== 'index.js' && socket.on(file.replace('.js', ''), data => {
+                    file !== 'index.js' && socket.on(file.replace('.js', ''), (data, ack) => {
                         require(`./${file}`)(data, socket, {
                             createMainConnection,
-                            createCoordsEvent
+                            ack
                         }).catch( error => {
                             console.log(error);
                             socket.disconnect();

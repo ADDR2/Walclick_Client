@@ -1,10 +1,26 @@
-module.exports = async (data, socket, { createMainConnection, createCoordsEvent }) => {
+module.exports = async (data, socket, { createMainConnection, ack }) => {
     const serverSocket = await createMainConnection();
-    serverSocket.emit('clientClooking', data);
 
-    serverSocket.on('response', result => {
-        !socket.listeners('coords').length && createCoordsEvent(socket, serverSocket);
+    const createCoordsEvent = () => {
+        socket.on('coords', (data, ack) => {
+            serverSocket.emit('coords', data, (result, error) => {
+                ack(!error && result, !!error && error);
+            });
+        });
+    
+        socket.on('arrived', (data, ack) => {
+            serverSocket.emit('arrived', data, (result, error) => {
+                ack(!error && result, !!error && error);
+                serverSocket.disconnect();
+            });
+        });
+    };
 
-        socket.emit('response', result);
+    serverSocket.emit('clientLooking', data, (result, error) => {
+        if(error) ack(undefined, error);
+        else {
+            createCoordsEvent(socket, serverSocket);
+            ack(result);
+        }
     });
 };
