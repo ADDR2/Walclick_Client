@@ -2,7 +2,23 @@ const fs = require('fs');
 
 const folder = `${__dirname}/../frontConnections/`;
 
-module.exports = (io, createMainConnection) => {
+const handleServerEvents = (io, permanentConnection) => {
+    permanentConnection.on('photographerFound', ({ clientSocketId, photographerInfo }, ack) => {
+        try {
+            if(clientSocketId in io.sockets.sockets) {
+                io.to(clientSocketId).emit('photographerFound', photographerInfo);
+                ack(true);
+            } else
+                ack(undefined, 'Client canceled');
+        } catch(error) {
+            console.log(error);
+        }
+    });
+};
+
+module.exports = (io, createMainConnection, permanentConnection) => {
+    handleServerEvents(io, permanentConnection);
+
     io.on('connection', async socket => {
         console.log('New client connected');
         try {        

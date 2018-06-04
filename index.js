@@ -8,22 +8,24 @@ const bodyParser = require('body-parser');
 
 const publicPath = path.join(__dirname, './public');
 const server = http.createServer(app);
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 8081;
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
 app.use(express.static(publicPath));
 
-const createMainConnection = () => {
+const createMainConnection = eventName => {
     return new Promise((resolve, reject) => {
         const serverSocket = socketClient.connect('http://localhost:5000');
-        serverSocket.on('connect', () => serverSocket.emit('Client') && resolve(serverSocket));
-        setTimeout(() => reject('Not able to connect to backend'), 5000);
+        serverSocket.on('connect', () => serverSocket.emit(eventName || 'Client') && resolve(serverSocket));
+        setTimeout(reject, 5000, 'Not able to connect to backend');
     });
 };
 
-require('./frontConnections')(socketIO(server), createMainConnection);
+createMainConnection('PermanentClient')
+    .then( require('./frontConnections').bind(this, socketIO(server), createMainConnection) )
+    .catch( error => (console.log(error), process.exit(1)) );
 
 app.post('/create', async (req, res) => {
     try {
